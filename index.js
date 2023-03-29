@@ -1,86 +1,53 @@
-// Your code herevar API = "556deb511d20dbe33798308827e4c111"
-var div = document.createElement('div')
-var weather = document.getElementById('weather')
-var form = document.querySelector('form')
-var search = document.getElementById('weather-search')
+let sectionWeather = document.querySelector('#weather');
+let form = document.querySelector('form')
+let inputLocation = document.querySelector('input');
 
-//main function
-form.onsubmit = function (e) {
-    e.preventDefault()
-    weather.prepend(div)
-    var URL = "http://api.openweathermap.org/data/2.5/weather?q="
-    var city = this.search.value.trim()
-    if ((!city) || (search.value = '')) {
-        city = ''
-        div.innerHTML = ''
-        search.value = ''
-    }
-    return fetch(URL + city + "&appid=" + API)
-//location not found
-        .then(function (res) {
-            if (res.status !== 200) throw new Error('Location not Found')
-            return res.json()
-        })
-        .then(showData)
 
-        .catch(function (err) {
-            div.innerHTML = err.message
-        })
+form.onsubmit = function(e) {
+  e.preventDefault();
+  const location = inputLocation.value.trim()
+  if (!location) return
+  searchWeather(location);
+  inputLocation.value = "";    
 }
 
-//display info function
-function showData(data) {
-    city = ""
-    div.innerHTML = ""
-    search.value = ''
+async function searchWeather(location) {
+    if (!location.includes(",")) location += ',us'
 
-//show city
-    var location = document.createElement('h2')
-    div.appendChild(location)
-    location.textContent = data.name + " , " + data.sys.country
+    try {
+        const url = `https://api.openweathermap.org/data/2.5/weather?q=${location}&units=imperial&appid=a76b32bf5b491e65fd99110fed59d0ba`;
+  
+        const response = await fetch(url)
+        const data = await response.json()
+        if(data !== null) {
+            showWeather(data)
+        }
+    } catch(err) {
+    }
+}
 
-//show map link
-    var mapLink = document.createElement('a')
-    var lat = data.coord.lat
-    var lon = data.coord.lon
-    var map = "https://www.google.com/maps/search/?api=1&query=" + lat + "," + lon
-    div.appendChild(mapLink)
-    mapLink.textContent = "Click to View Map"
-    mapLink.href = map
-    mapLink.target = "_BLANK"
-
-//show weather condition icon
-    var icon = document.createElement('img')
-    var iconCode = data.weather[0].icon
-    var iconURL = "https://openweathermap.org/img/wn/" + iconCode + "@2x.png"
-    icon.src = iconURL
-    icon.alt = data.name
-    div.appendChild(icon)
-
-//show weather condition
-    var condition = document.createElement('p')
-    condition.setAttribute('style', 'text-transform: capitalize')
-    condition.textContent = data.weather[0].description
-    div.appendChild(condition)
-
-//show current temperature
-    var temperature = document.createElement('p')
-    temperatureNumber = data.main.temp
-    temperature.textContent = "Current:  " + temperatureNumber + '° F'
-    div.appendChild(temperature)
-
-//show feels like temperature
-    var feelsLike = document.createElement('p')
-    feelsLikeTemp = data.main.feels_like
-    feelsLike.textContent = "Feels like:  " + feelsLikeTemp + '° F'
-    div.appendChild(feelsLike)
-
-//show time
-    var dateTime = document.createElement('p')
-    var date = new Date((data.dt) * 1000)
-    var time = date.toLocaleTimeString('en-US', {
-        hour: 'numeric', minute: '2-digit'
-    })
-    dateTime.textContent = 'Last Updated:  ' + time
-    div.appendChild(dateTime)
+showWeather = (data) => {  
+    if(data.cod !== 200){
+        sectionWeather.innerHTML = '<h2>Location Not Found</h2>';
+    }
+    else{
+        if(data.cod === 200){
+            
+        const { coord: {lat, lon}, main: {feels_like, temp}, name, sys: {country}, weather: {[0]: {description, icon}}} = data;
+        const dateTime = new Date(data.dt *1000);
+        const currentTime = dateTime.toLocaleTimeString('en-US', {
+            hour: 'numeric',
+            minute:'2-digit'
+        })
+            
+        sectionWeather.innerHTML = `
+            <h2>${name},  ${country}</h2>
+            <a href="https://www.google.com/maps/search/?api=1&query=${lat},${lon}" target="__BLANK">click to view map</a>
+            <img src="https://openweathermap.org/img/wn/${icon}@2x.png">
+            <p style="text-transform: capitalize;">${ description}</p><br>
+            <p>Current: ${temp} ° F</p>
+            <p>Feels like: ${feels_like} F</p><br>
+            <p>Last updated: ${currentTime}</p>`;
+        }
+    }    
 }
